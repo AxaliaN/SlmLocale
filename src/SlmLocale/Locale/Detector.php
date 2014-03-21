@@ -171,10 +171,16 @@ class Detector implements EventManagerAwareInterface
         return $locale;
     }
 
-    public function assemble($locale, $uri)
+    /**
+     * @param $locale string
+     * @param $uri string|Uri
+     * @return mixed
+     */
+    public function assemble($locale, $uri, $forceCanonical = false)
     {
         $event = new LocaleEvent(LocaleEvent::EVENT_ASSEMBLE, $this);
         $event->setLocale($locale);
+        $event->setForceCanonical($forceCanonical);
 
         if ($this->hasSupported()) {
             $event->setSupported($this->getSupported());
@@ -186,10 +192,12 @@ class Detector implements EventManagerAwareInterface
         $event->setUri($uri);
 
         $events  = $this->getEventManager();
-        $results = $events->trigger($event);
+        $results = $events->trigger($event, function($r) {
+            return is_string($r);
+        });
 
         if (!$results->stopped()) {
-            return $uri;
+            return null;
         }
 
         return $results->last();
